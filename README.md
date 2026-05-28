@@ -1,4 +1,4 @@
-# Money-Tracing
+# 不买就不会赔
 
 输入任意 A 股股票代码，基于估值、财务、技术、风险四个维度，生成 **10 条详实的"不值得买"理由**。
 
@@ -8,8 +8,8 @@
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/yourusername/Money-Tracing.git
-cd Money-Tracing
+git clone https://github.com/yourusername/buymai-jiu-buhui-pei.git
+cd buymai-jiu-buhui-pei
 
 # 2. 一键安装
 ./install.sh

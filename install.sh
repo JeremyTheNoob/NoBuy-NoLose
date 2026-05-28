@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OS="$(uname -s)"
-echo "Money-Tracing 一键安装脚本"
+echo "不买就不会赔 一键安装脚本"
 echo "检测到系统: $OS"
 echo ""
 

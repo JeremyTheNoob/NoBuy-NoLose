@@ -12,7 +12,7 @@ from .engine.aggregator import generate_reasons, make_summary
 from .ai.providers import build_ai_adapter
 
 
-app = FastAPI(title="Money-Tracing", description="A股不值得买分析器", version="1.0.0")
+app = FastAPI(title="不买就不会赔", description="A股不值得买分析器", version="1.0.0")
 
 _config = load_config()
 
@@ -43,7 +43,7 @@ async def index():
     index_path = static_dir / "index.html"
     if index_path.exists():
         return FileResponse(str(index_path))
-    return {"message": "Money-Tracing API is running. Visit /docs for API documentation."}
+    return {"message": "不买就不会赔 API is running. Visit /docs for API documentation."}
 
 
 @app.get("/health")
