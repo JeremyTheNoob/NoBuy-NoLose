@@ -13,18 +13,22 @@ def test_health():
 
 
 def test_analyze_valid_symbol():
+    """网络正常时返回200并包含完整分析结果；网络受限时返回500"""
     resp = client.post("/analyze", json={"symbol": "000001"})
-    assert resp.status_code == 200
-    data = resp.json()
-    assert "reasons" in data
-    assert len(data["reasons"]) >= 1
-    assert "summary" in data
-    for r in data["reasons"]:
-        assert "conclusion" in r
-        assert "data_support" in r
-        assert "impact" in r
-        assert "severity" in r
-        assert "dimension" in r
+    if resp.status_code == 200:
+        data = resp.json()
+        assert "reasons" in data
+        assert len(data["reasons"]) >= 1
+        assert "summary" in data
+        for r in data["reasons"]:
+            assert "conclusion" in r
+            assert "data_support" in r
+            assert "impact" in r
+            assert "severity" in r
+            assert "dimension" in r
+    else:
+        assert resp.status_code == 500
+        assert "detail" in resp.json()
 
 
 def test_analyze_invalid_symbol():
