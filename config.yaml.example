@@ -3,13 +3,18 @@
 
 data:
   # 数据源优先级，排前面的优先
+  # tushare: 最稳定，推荐。免费注册: https://tushare.pro
+  # akshare: 聚合多个免费源（东方财富、同花顺等）
+  # sina: 新浪财经，轻量备选
+  # eastmoney: 东方财富直连
   provider_order:
     - tushare
     - akshare
+    - sina
     - eastmoney
   tushare:
     token: ""           # tushare.pro 的 API token，留空自动跳过
-  cache_ttl: 3600       # 数据缓存有效期（秒）
+  cache_ttl: 3600       # 数据缓存有效期（秒），同代码在 TTL 内不重复拉取
 
 ai:
   # provider: deepseek | qwen | zhipu | moonshot | ollama | openai | custom | none
