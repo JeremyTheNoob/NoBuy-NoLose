@@ -19,7 +19,7 @@ class OllamaAdapter(AIAdapter):
         except Exception:
             return False
 
-    def enhance(self, reasons: list[dict], stock_name: str, symbol: str) -> list[dict]:
+    def enhance(self, reasons: list[dict], stock_name: str, symbol: str) -> tuple[list[dict], str | None]:
         prompt = build_prompt(reasons, stock_name, symbol)
         try:
             resp = httpx.post(
@@ -33,10 +33,12 @@ class OllamaAdapter(AIAdapter):
                 content = content.split("\n", 1)[1].rsplit("```", 1)[0]
             enhanced = json.loads(content)
             if isinstance(enhanced, list):
-                return enhanced
-        except Exception:
-            pass
-        return reasons
+                return enhanced, None
+            return reasons, "AI 返回格式异常，使用原始结果"
+        except json.JSONDecodeError:
+            return reasons, "AI 返回非 JSON 格式，使用原始结果"
+        except Exception as e:
+            return reasons, f"AI 增强失败: {e}"
 
 
 class OpenAICompatAdapter(AIAdapter):
@@ -55,15 +57,16 @@ class OpenAICompatAdapter(AIAdapter):
     def is_available(self) -> bool:
         return bool(self.api_key)
 
-    def enhance(self, reasons: list[dict], stock_name: str, symbol: str) -> list[dict]:
+    def enhance(self, reasons: list[dict], stock_name: str, symbol: str) -> tuple[list[dict], str | None]:
         if not self.client:
-            return reasons
+            return reasons, "AI API key 未配置"
         prompt = build_prompt(reasons, stock_name, symbol)
         try:
             resp = self.client.chat.completions.create(
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.7,
+                timeout=60,
             )
             content = resp.choices[0].message.content or ""
             content = content.strip()
@@ -71,20 +74,27 @@ class OpenAICompatAdapter(AIAdapter):
                 content = content.split("\n", 1)[1].rsplit("```", 1)[0]
             enhanced = json.loads(content)
             if isinstance(enhanced, list):
-                return enhanced
-        except Exception:
-            pass
-        return reasons
+                return enhanced, None
+            return reasons, "AI 返回格式异常，使用原始结果"
+        except json.JSONDecodeError:
+            return reasons, "AI 返回非 JSON 格式，使用原始结果"
+        except Exception as e:
+            return reasons, f"AI 增强失败: {e}"
 
 
-def build_ai_adapter(config: AppConfig) -> AIAdapter | None:
-    """根据配置创建 AI 适配器，返回 None 表示禁用"""
+def build_ai_adapter(config: AppConfig) -> tuple[AIAdapter | None, str | None]:
+    """根据配置创建 AI 适配器。返回 (adapter, warning)。
+    adapter 为 None 表示禁用；warning 为非 None 表示配置了但不可用。
+    """
     ai = config.ai
     if ai.provider == "none" or not ai.provider:
-        return None
+        return None, None
 
     if ai.provider == "ollama":
-        return OllamaAdapter(host=ai.ollama.host, model=ai.ollama.model)
+        adapter = OllamaAdapter(host=ai.ollama.host, model=ai.ollama.model)
+        if adapter.is_available():
+            return adapter, None
+        return adapter, "Ollama 服务未连接，请在 config.yaml 中确认 host 和 model"
 
     providers = {
         "deepseek": ai.deepseek,
@@ -96,13 +106,15 @@ def build_ai_adapter(config: AppConfig) -> AIAdapter | None:
 
     if ai.provider in providers:
         cfg = providers[ai.provider]
-        if cfg.api_key and cfg.model:
-            return OpenAICompatAdapter(ai.provider, cfg.api_key, cfg.model, cfg.base_url)
-        return None
+        if not cfg.api_key:
+            return None, f"AI provider 设为 {ai.provider} 但 api_key 为空，AI 已禁用"
+        if not cfg.model:
+            return None, f"AI provider 设为 {ai.provider} 但 model 为空，AI 已禁用"
+        return OpenAICompatAdapter(ai.provider, cfg.api_key, cfg.model, cfg.base_url), None
 
     if ai.provider == "custom":
-        if ai.custom.api_key and ai.custom.base_url:
-            return OpenAICompatAdapter("custom", ai.custom.api_key, ai.custom.model, ai.custom.base_url)
-        return None
+        if not ai.custom.api_key or not ai.custom.base_url:
+            return None, "自定义 AI provider 缺少 api_key 或 base_url，AI 已禁用"
+        return OpenAICompatAdapter("custom", ai.custom.api_key, ai.custom.model, ai.custom.base_url), None
 
-    return None
+    return None, f"未知的 AI provider: {ai.provider}，AI 已禁用"

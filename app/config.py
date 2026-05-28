@@ -8,7 +8,7 @@ class TushareConfig(BaseModel):
     token: str = ""
 
 class DataConfig(BaseModel):
-    provider_order: list[str] = ["tushare", "akshare", "eastmoney"]
+    provider_order: list[str] = ["tushare", "akshare", "sina", "eastmoney"]
     tushare: TushareConfig = TushareConfig()
     cache_ttl: int = 3600
 

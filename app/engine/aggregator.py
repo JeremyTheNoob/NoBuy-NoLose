@@ -47,10 +47,13 @@ def generate_reasons(data: StockData, target_count: int = 10) -> list[dict]:
     return deduped
 
 
-def make_summary(reasons: list[dict], elapsed: float, provider: str, ai_provider: str | None = None) -> dict:
+def make_summary(reasons: list[dict], elapsed: float, provider: str, ai_provider: str | None = None, ai_error: str | None = None) -> dict:
     high = sum(1 for r in reasons if r["severity"] == "high")
     medium = sum(1 for r in reasons if r["severity"] == "medium")
     low = sum(1 for r in reasons if r["severity"] == "low")
+    ai_display = ai_provider or "未启用"
+    if ai_error:
+        ai_display += f" ({ai_error})"
     return {
         "total": len(reasons),
         "high": high,
@@ -58,5 +61,5 @@ def make_summary(reasons: list[dict], elapsed: float, provider: str, ai_provider
         "low": low,
         "elapsed_seconds": round(elapsed, 2),
         "provider": provider,
-        "ai_provider": ai_provider or "未启用",
+        "ai_provider": ai_display,
     }

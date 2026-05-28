@@ -67,16 +67,21 @@ def analyze(req: AnalyzeRequest):
     reasons = generate_reasons(data, target_count=10)
 
     ai_provider = None
+    ai_error = None
     try:
-        adapter = build_ai_adapter(_config)
+        adapter, warning = build_ai_adapter(_config)
+        if warning:
+            ai_error = warning
         if adapter and adapter.is_available():
-            reasons = adapter.enhance(reasons, data.info.name or symbol, symbol)
+            reasons, enhance_error = adapter.enhance(reasons, data.info.name or symbol, symbol)
             ai_provider = adapter.name
-    except Exception:
-        pass
+            if enhance_error:
+                ai_error = enhance_error
+    except Exception as e:
+        ai_error = f"AI 增强异常: {e}"
 
     elapsed = time.time() - start
-    summary = make_summary(reasons, elapsed, provider_name, ai_provider)
+    summary = make_summary(reasons, elapsed, provider_name, ai_provider, ai_error)
 
     return AnalyzeResponse(
         symbol=symbol,

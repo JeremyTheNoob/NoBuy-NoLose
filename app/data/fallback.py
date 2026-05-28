@@ -18,8 +18,6 @@ def _build_providers(config: AppConfig) -> list[DataProvider]:
             providers.append(SinaProvider())
         elif name == "eastmoney":
             providers.append(EastmoneyProvider())
-    if not providers:
-        providers.extend([AkshareProvider(), SinaProvider()])
     return providers
 
 

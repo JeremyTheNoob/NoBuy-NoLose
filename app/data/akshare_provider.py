@@ -1,17 +1,15 @@
 import time
 import pandas as pd
 import akshare as ak
-from .provider import DataProvider, StockInfo, ValuationData, FinancialData, TechnicalData, RiskData
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from .provider import DataProvider, StockInfo, ValuationData, FinancialData, TechnicalData, RiskData, StockData
 
 
 def _retry(func, max_retries=2, delay=1.0):
     """带重试的网络请求包装"""
     for attempt in range(max_retries + 1):
         try:
-            result = func()
-            if attempt > 0:
-                time.sleep(delay)
-            return result
+            return func()
         except Exception as e:
             if attempt == max_retries:
                 raise e
@@ -83,13 +81,11 @@ class AkshareProvider(DataProvider):
             ma_20 = float(close.tail(20).mean())
             ma_60 = float(close.tail(60).mean()) if len(close) >= 60 else None
             ma_200 = float(close.tail(200).mean()) if len(close) >= 200 else None
-            # RSI-14
             delta = close.diff()
             gain = delta.where(delta > 0, 0.0).rolling(14).mean()
             loss = (-delta.where(delta < 0, 0.0)).rolling(14).mean()
             rs = gain / loss
             rsi = float(100 - (100 / (1 + rs.iloc[-1]))) if loss.iloc[-1] != 0 else 50.0
-            # MACD
             ema_12 = close.ewm(span=12).mean()
             ema_26 = close.ewm(span=26).mean()
             dif = ema_12 - ema_26
@@ -108,8 +104,41 @@ class AkshareProvider(DataProvider):
             pledge_df = _retry(lambda: ak.stock_gpzy_pledge_ratio_em())
             pledge_ratio = None
             if not pledge_df.empty:
-                col = next((c for c in pledge_df.columns if "比例" in c or "ratio" in c.lower()), pledge_df.columns[-1])
-                pledge_ratio = float(pledge_df.iloc[0][col]) if pd.notna(pledge_df.iloc[0][col]) else None
+                code_col = next((c for c in pledge_df.columns if c in ("股票代码", "代码", "code")), None)
+                if code_col:
+                    row = pledge_df[pledge_df[code_col].astype(str).str.strip() == symbol]
+                else:
+                    row = pledge_df
+                if not row.empty:
+                    col = next((c for c in pledge_df.columns if "比例" in c or "ratio" in c.lower()), pledge_df.columns[-1])
+                    pledge_ratio = float(row.iloc[0][col]) if pd.notna(row.iloc[0][col]) else None
             return RiskData(pledge_ratio=pledge_ratio)
         except Exception:
             return RiskData()
+
+    def fetch_all(self, symbol: str) -> StockData:
+        """并行拉取各维度数据，30s 超时"""
+        result = StockData()
+
+        def safe_fetch(method, *args):
+            try:
+                return method(*args)
+            except Exception:
+                return None
+
+        with ThreadPoolExecutor(max_workers=5) as pool:
+            futures = {
+                pool.submit(safe_fetch, self.fetch_stock_info, symbol): "info",
+                pool.submit(safe_fetch, self.fetch_valuation, symbol): "valuation",
+                pool.submit(safe_fetch, self.fetch_financial, symbol): "financial",
+                pool.submit(safe_fetch, self.fetch_technical, symbol): "technical",
+                pool.submit(safe_fetch, self.fetch_risk, symbol): "risk",
+            }
+
+            for future in as_completed(futures, timeout=30):
+                key = futures[future]
+                val = future.result()
+                if val is not None:
+                    setattr(result, key, val)
+
+        return result

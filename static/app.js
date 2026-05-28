@@ -1,9 +1,23 @@
 const SEVERITY_LABELS = { high: "高风险", medium: "中等风险", low: "低风险" };
+const REQUEST_TIMEOUT_MS = 60000;
+
+let abortController = null;
 
 document.getElementById("analyzeBtn").addEventListener("click", runAnalysis);
+document.getElementById("abortBtn").addEventListener("click", abortAnalysis);
 document.getElementById("symbolInput").addEventListener("keydown", (e) => {
     if (e.key === "Enter") runAnalysis();
 });
+
+function abortAnalysis() {
+    if (abortController) {
+        abortController.abort();
+        abortController = null;
+    }
+    hide("loading");
+    document.getElementById("analyzeBtn").disabled = false;
+    showError("分析已取消");
+}
 
 async function runAnalysis() {
     const symbol = document.getElementById("symbolInput").value.trim();
@@ -17,14 +31,21 @@ async function runAnalysis() {
 
     hide("error");
     hide("result");
+    document.getElementById("loadingText").textContent = "正在获取数据并分析中...";
     show("loading");
+
+    abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), REQUEST_TIMEOUT_MS);
 
     try {
         const resp = await fetch("/analyze", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ symbol }),
+            signal: abortController.signal,
         });
+
+        clearTimeout(timeoutId);
 
         if (!resp.ok) {
             const err = await resp.json();
@@ -34,8 +55,14 @@ async function runAnalysis() {
         const data = await resp.json();
         renderResult(data);
     } catch (e) {
-        showError(e.message);
+        if (e.name === "AbortError") {
+            showError(e.message || "请求超时，请检查网络后重试");
+        } else {
+            showError(e.message);
+        }
     } finally {
+        clearTimeout(timeoutId);
+        abortController = null;
         hide("loading");
         btn.disabled = false;
     }

@@ -14,7 +14,15 @@ if ! command -v python3 &>/dev/null; then
     exit 1
 fi
 
-PY_VER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+PY_MAJOR=$(python3 -c "import sys; print(sys.version_info.major)")
+PY_MINOR=$(python3 -c "import sys; print(sys.version_info.minor)")
+if [ "$PY_MAJOR" -lt 3 ] || ([ "$PY_MAJOR" -eq 3 ] && [ "$PY_MINOR" -lt 10 ]); then
+    echo "Python 版本过低: $PY_MAJOR.$PY_MINOR，需要 3.10 或以上"
+    echo "   macOS: brew install python@3.12"
+    echo "   Windows: https://www.python.org/downloads/"
+    exit 1
+fi
+PY_VER="$PY_MAJOR.$PY_MINOR"
 echo "Python $PY_VER"
 
 # --- Check Docker ---

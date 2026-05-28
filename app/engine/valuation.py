@@ -1,17 +1,5 @@
-import json
-from pathlib import Path
 from ..data.provider import ValuationData, StockInfo
-
-
-_TEMPLATES = None
-
-def _load_templates():
-    global _TEMPLATES
-    if _TEMPLATES is None:
-        tmpl_path = Path(__file__).parent.parent.parent / "templates" / "reasons_zh.json"
-        with open(tmpl_path, "r", encoding="utf-8") as f:
-            _TEMPLATES = json.load(f)
-    return _TEMPLATES
+from . import load_templates
 
 
 def analyze(valuation: ValuationData, info: StockInfo) -> list[dict]:
@@ -19,7 +7,7 @@ def analyze(valuation: ValuationData, info: StockInfo) -> list[dict]:
     基于估值数据生成 2-3 条理由。
     返回格式: [{"conclusion": str, "data_support": str, "impact": str, "severity": str, "dimension": "估值"}]
     """
-    templates = _load_templates()["valuation"]
+    templates = load_templates()["valuation"]
     reasons = []
 
     # PE 高估
