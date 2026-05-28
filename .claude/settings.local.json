@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(chmod +x /Users/liuweihua/Downloads/Money-Tracing/analyze.py)",
+      "Bash(chmod +x /Users/liuweihua/Downloads/Money-Tracing/install.sh /Users/liuweihua/Downloads/Money-Tracing/start.sh)"
     ]
   }
 }
