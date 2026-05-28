@@ -1,6 +1,21 @@
+import time
 import pandas as pd
 import akshare as ak
 from .provider import DataProvider, StockInfo, ValuationData, FinancialData, TechnicalData, RiskData
+
+
+def _retry(func, max_retries=2, delay=1.0):
+    """带重试的网络请求包装"""
+    for attempt in range(max_retries + 1):
+        try:
+            result = func()
+            if attempt > 0:
+                time.sleep(delay)
+            return result
+        except Exception as e:
+            if attempt == max_retries:
+                raise e
+            time.sleep(delay * (attempt + 1))
 
 
 class AkshareProvider(DataProvider):
@@ -11,7 +26,7 @@ class AkshareProvider(DataProvider):
 
     def fetch_stock_info(self, symbol: str) -> StockInfo:
         try:
-            df = ak.stock_individual_info_em(symbol=symbol)
+            df = _retry(lambda: ak.stock_individual_info_em(symbol=symbol))
             info = StockInfo(symbol=symbol)
             for _, row in df.iterrows():
                 if row["item"] == "股票简称":
@@ -24,22 +39,25 @@ class AkshareProvider(DataProvider):
 
     def fetch_valuation(self, symbol: str) -> ValuationData:
         try:
-            df = ak.stock_a_lg_indicator(symbol=symbol)
-            if df.empty:
+            df = _retry(lambda: ak.stock_zh_a_spot_em())
+            row = df[df["代码"] == symbol]
+            if row.empty:
                 return ValuationData()
-            latest = df.iloc[-1]
-            pe_col = [c for c in df.columns if "市盈率" in c and "PE" in c.upper()]
-            pb_col = [c for c in df.columns if "市净率" in c and "PB" in c.upper()]
+            r = row.iloc[0]
+            pe_col = next((c for c in df.columns if "市盈率" in c and "动态" in c), None)
+            if pe_col is None:
+                pe_col = next((c for c in df.columns if "市盈率" in c), None)
+            pb_col = next((c for c in df.columns if "市净率" in c), None)
             return ValuationData(
-                pe=float(latest[pe_col[0]]) if pe_col and pd.notna(latest[pe_col[0]]) else None,
-                pb=float(latest[pb_col[0]]) if pb_col and pd.notna(latest[pb_col[0]]) else None,
+                pe=float(r[pe_col]) if pe_col and pd.notna(r[pe_col]) else None,
+                pb=float(r[pb_col]) if pb_col and pd.notna(r[pb_col]) else None,
             )
         except Exception:
             return ValuationData()
 
     def fetch_financial(self, symbol: str) -> FinancialData:
         try:
-            df = ak.stock_financial_abstract_ths(symbol=symbol, indicator="按年度")
+            df = _retry(lambda: ak.stock_financial_abstract_ths(symbol=symbol, indicator="按年度"))
             if df.empty:
                 return FinancialData()
             recent = df.head(5)
@@ -57,7 +75,7 @@ class AkshareProvider(DataProvider):
 
     def fetch_technical(self, symbol: str) -> TechnicalData:
         try:
-            df = ak.stock_zh_a_hist(symbol=symbol, period="daily", adjust="qfq")
+            df = _retry(lambda: ak.stock_zh_a_hist(symbol=symbol, period="daily", adjust="qfq"))
             if df.empty or len(df) < 200:
                 return TechnicalData()
             close = df["收盘"].astype(float)
@@ -87,7 +105,7 @@ class AkshareProvider(DataProvider):
 
     def fetch_risk(self, symbol: str) -> RiskData:
         try:
-            pledge_df = ak.stock_gpzy_pledge_ratio_em()
+            pledge_df = _retry(lambda: ak.stock_gpzy_pledge_ratio_em())
             pledge_ratio = None
             if not pledge_df.empty:
                 col = next((c for c in pledge_df.columns if "比例" in c or "ratio" in c.lower()), pledge_df.columns[-1])
