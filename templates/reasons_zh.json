@@ -1,0 +1,94 @@
+{
+  "valuation": {
+    "pe_high_percentile": {
+      "severity": "high",
+      "conclusion": "当前 PE {pe:.1f}，处于近5年历史 {percentile:.0f}% 分位",
+      "data_support": "近5年 PE 中位数为 {pe_median:.1f}，当前值高出中位数 {premium:.0f}%。同行业（{industry}）PE 均值仅 {pe_industry:.1f}，{name} 已显著偏离行业中枢。",
+      "impact": "高估值意味着市场已充分定价甚至过度乐观。一旦业绩不及预期或市场情绪转向，面临较大的估值回归压力。"
+    },
+    "pb_high": {
+      "severity": "medium",
+      "conclusion": "当前 PB {pb:.1f}，高于行业均值 {pb_industry:.1f}",
+      "data_support": "同行业（{industry}）PB 均值 {pb_industry:.1f}，{name} 溢价 {pb_premium:.0f}%。",
+      "impact": "市净率偏高暗示市场对公司资产质量给予了较高预期，若 ROE 不能匹配该溢价，股价存在回调风险。"
+    }
+  },
+  "financial": {
+    "roe_declining": {
+      "severity": "high",
+      "conclusion": "ROE 连续 {years} 年下滑，从 {roe_first:.1f}% 降至 {roe_last:.1f}%",
+      "data_support": "近 {years} 年 ROE 变化: {roe_sequence}。累计下滑幅度 {roe_decline:.1f} 个百分点。",
+      "impact": "ROE 持续下滑表明公司盈利能力在恶化。资本回报率的下降往往先于股价下跌，是基本面向弱的重要先行指标。"
+    },
+    "debt_high": {
+      "severity": "medium",
+      "conclusion": "资产负债率 {debt:.1f}%，显著高于行业均值 {debt_industry:.1f}%",
+      "data_support": "行业平均资产负债率 {debt_industry:.1f}%，{name} 高出 {debt_gap:.1f} 个百分点。",
+      "impact": "高杠杆意味着更高的财务风险和利息负担。在经济下行或利率上升周期中，高负债企业面临更大的经营压力。"
+    },
+    "cashflow_negative": {
+      "severity": "high",
+      "conclusion": "经营现金流连续 {cf_negative_years} 年为负",
+      "data_support": "近 {cf_negative_years} 年经营现金流分别为: {cf_sequence}。",
+      "impact": "经营现金流持续为负说明公司主营业务不产生真正的现金流入，利润可能依赖应收款项或投资收益支撑，盈利质量堪忧。"
+    },
+    "revenue_declining": {
+      "severity": "medium",
+      "conclusion": "营收增速连续放缓，近 {years} 年复合增长率仅 {cagr:.1f}%",
+      "data_support": "近 {years} 年营收增速分别为: {revenue_sequence}。",
+      "impact": "营收增长乏力可能反映市场空间见顶或竞争力下降。在成本刚性的情况下，营收放缓将直接拖累利润。"
+    }
+  },
+  "technical": {
+    "below_ma200": {
+      "severity": "high",
+      "conclusion": "股价 {price:.2f} 跌破 200 日均线 {ma200:.2f}，中期趋势偏弱",
+      "data_support": "当前股价处于 200 日均线下方 {below_pct:.1f}%，属于技术性熊市区域。",
+      "impact": "200 日均线被视为牛熊分界线。股价持续运行在 200 日线下方往往预示着中长期资金正在流出，趋势逆转需要时间。"
+    },
+    "below_ma60": {
+      "severity": "medium",
+      "conclusion": "股价 {price:.2f} 低于 60 日均线 {ma60:.2f}，短期动能不足",
+      "data_support": "当前股价低于 60 日均线 {below_pct:.1f}%。",
+      "impact": "60 日均线反映季度级别的持仓成本。股价持续低于此线表明大多数近期买入者处于亏损状态，反弹时将面临解套抛压。"
+    },
+    "macd_death_cross": {
+      "severity": "medium",
+      "conclusion": "MACD DIF 下穿 DEA，动能转弱",
+      "data_support": "当前 DIF {dif:.3f}，DEA {dea:.3f}，柱状图 {hist:.3f}。",
+      "impact": "MACD 死叉是趋势交易中常用的卖出信号。虽然并非每次死叉都会下跌，但结合当前基本面状况，技术面的走弱增加了短期风险。"
+    },
+    "rsi_overbought": {
+      "severity": "low",
+      "conclusion": "RSI(14) 为 {rsi:.1f}，接近超买区间",
+      "data_support": "RSI 高于 70 通常被视为超买信号，当前值为 {rsi:.1f}。",
+      "impact": "RSI 超买提示短期可能存在回调需求。虽然强势股可以维持超买状态较长时间，但追高买入的风险收益比不佳。"
+    }
+  },
+  "risk": {
+    "insider_selling": {
+      "severity": "high",
+      "conclusion": "近3月高管累计减持 {amount:.1f} 万元，存在内部人卖出压力",
+      "data_support": "近期减持记录: {insider_details}。",
+      "impact": "高管作为最了解公司经营状况的人，其减持行为值得重视。大规模的内部人卖出可能暗示他们对短期前景的担忧。"
+    },
+    "pledge_high": {
+      "severity": "high",
+      "conclusion": "股权质押比例达 {pledge:.1f}%，远高于 30% 的警戒线",
+      "data_support": "当前质押比例 {pledge:.1f}%，大股东质押融资在股价大幅下跌时可能触发强制平仓。",
+      "impact": "高质押比例是潜在的黑天鹅风险源。一旦股价跌破平仓线，大股东若无法补仓或还款，将面临被动减持，进一步打压股价形成负反馈。"
+    },
+    "regulatory_inquiry": {
+      "severity": "medium",
+      "conclusion": "近12个月收到 {inquiry_count} 次交易所问询函，合规风险值得关注",
+      "data_support": "交易所问询通常涉及财务数据异常、关联交易、信息披露等问题。频繁收函往往意味着公司治理或财务披露存在问题。",
+      "impact": "监管关注增加公司未来面临处罚或在融资、重组等事项上受阻的风险，对股价构成潜在利空。"
+    },
+    "no_insider_buying": {
+      "severity": "low",
+      "conclusion": "近 3 月无高管增持记录，内部人缺乏信心信号",
+      "data_support": "在近期股价区间内，无任何高管或大股东主动增持行为。",
+      "impact": "如果连最了解公司的人都不愿意在当前价位买入，普通投资者更应该三思。"
+    }
+  }
+}
