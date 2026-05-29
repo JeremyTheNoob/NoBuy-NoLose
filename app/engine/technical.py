@@ -57,4 +57,14 @@ def analyze(technical: TechnicalData, info: StockInfo) -> list[dict]:
             "dimension": "技术面",
         })
 
+    # 仅有价格数据时，至少告知用户当前价位
+    if not reasons and technical.price is not None:
+        reasons.append({
+            "conclusion": f"当前股价 {technical.price:.2f} 元，但无法获取均线及技术指标数据",
+            "data_support": "由于网络限制，仅从新浪财经获取到实时价格，缺少历史K线数据，无法计算均线、MACD、RSI 等技术指标。",
+            "impact": "缺少技术指标意味着无法判断当前价位在历史走势中的位置，建议配置 tushare token 以获取完整数据。",
+            "severity": "low",
+            "dimension": "技术面",
+        })
+
     return reasons

@@ -34,12 +34,34 @@ def generate_reasons(data: StockData, target_count: int = 10) -> list[dict]:
             deduped.append(r)
             dimension_counts[dim] = cnt + 1
 
-    # 如果还不够 target_count，补充通用理由
-    while len(deduped) < target_count:
+    # 数据稀疏时，优先给出数据提示
+    if len(deduped) < 3:
+        missing = []
+        if not (data.valuation.pe or data.valuation.pb):
+            missing.append("估值")
+        if not (data.financial.roe_trend or data.financial.debt_ratio):
+            missing.append("财务")
+        if not data.technical.price:
+            missing.append("技术面")
+        if not (data.risk.pledge_ratio or data.risk.insider_sells_3m):
+            missing.append("风险")
+
+        if missing:
+            # 数据提示插在最前面
+            deduped.insert(0, {
+                "conclusion": f"数据不完整：{', '.join(missing)}维度缺失，建议配置 tushare token",
+                "data_support": f"当前仅从 {data.info.name and '新浪财经' or '数据源'} 获取到基础行情。免费注册 tushare.pro 获取 API token 后填入 config.yaml，即可获得完整的估值、财务、风险数据。",
+                "impact": "数据不完整时做出的分析结论参考价值有限。完善的データ是理性决策的基础。",
+                "severity": "medium",
+                "dimension": "数据提示",
+            })
+
+    # 如果分析理由太少（数据不足），补充1条统一的提示，不过度堆砌
+    if len(deduped) < 3:
         deduped.append({
-            "conclusion": "该股票无法通过基础数据验证获得足够的安全边际",
-            "data_support": "在估值、财务、技术、风险四个维度中，多个关键指标缺失或表现不佳，无法形成完整的投资价值评估。",
-            "impact": "信息不充分本身就是一种风险。在关键数据缺失的情况下买入，等于在不完全信息下做决策。",
+            "conclusion": "当前可用的分析数据不足，建议配置 tushare token 以获得完整的四维度分析",
+            "data_support": "免费注册 tushare.pro 获取 API token，填入 config.yaml 后重新查询，即可获得包含估值、财务质量、技术指标和风险事件的完整报告。",
+            "impact": "完善的数据覆盖是做出理性投资决策的前提。",
             "severity": "medium",
             "dimension": "综合",
         })

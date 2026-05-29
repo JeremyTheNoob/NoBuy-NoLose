@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 
 @dataclass
 class StockInfo:
-    symbol: str
+    symbol: str = ""
     name: str = ""
     industry: str = ""
 
