@@ -64,21 +64,28 @@ def analyze(req: AnalyzeRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"数据获取失败: {e}")
 
-    reasons = generate_reasons(data, target_count=10)
+    # 先用规则引擎算一遍（兜底）
+    rule_reasons = generate_reasons(data, target_count=10)
 
     ai_provider = None
     ai_error = None
+    reasons = rule_reasons
+
     try:
         adapter, warning = build_ai_adapter(_config)
         if warning:
             ai_error = warning
         if adapter and adapter.is_available():
-            reasons, enhance_error = adapter.enhance(reasons, data.info.name or symbol, symbol)
-            ai_provider = adapter.name
-            if enhance_error:
-                ai_error = enhance_error
+            # LLM 直接生成 10 条理由
+            llm_reasons = adapter.generate(data)
+            if llm_reasons and len(llm_reasons) >= 3:
+                reasons = llm_reasons
+                ai_provider = adapter.name
+            else:
+                ai_error = "AI 未生成足够理由，使用规则引擎结果"
+                ai_provider = adapter.name
     except Exception as e:
-        ai_error = f"AI 增强异常: {e}"
+        ai_error = f"AI 调用异常: {e}"
 
     elapsed = time.time() - start
     summary = make_summary(reasons, elapsed, provider_name, ai_provider, ai_error)

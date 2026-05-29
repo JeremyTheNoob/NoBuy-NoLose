@@ -1,8 +1,36 @@
 import json
 import httpx
 from openai import OpenAI
-from .base import AIAdapter, build_prompt
+from .base import AIAdapter, build_prompt, build_analysis_prompt
 from ..config import AppConfig
+from ..data.provider import StockData
+
+
+def _call_llm_and_parse(client, model, prompt, timeout=120) -> tuple[list[dict] | None, str | None]:
+    """调用 OpenAI 兼容 API 并解析 JSON 响应"""
+    try:
+        resp = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7, timeout=min(timeout, 60),
+        )
+        content = resp.choices[0].message.content or ""
+        content = content.strip()
+        # 处理 markdown 代码块
+        if content.startswith("```"):
+            lines = content.split("\n")
+            content = "\n".join(lines[1:]) if len(lines) > 1 else content
+            if content.endswith("```"):
+                content = content[:-3]
+            content = content.strip()
+        result = json.loads(content)
+        if isinstance(result, list) and len(result) >= 1:
+            return result, None
+        return None, "AI 返回格式异常"
+    except json.JSONDecodeError:
+        return None, "AI 返回非 JSON 格式"
+    except Exception as e:
+        return None, f"AI 调用失败: {e}"
 
 
 class OllamaAdapter(AIAdapter):
@@ -18,6 +46,24 @@ class OllamaAdapter(AIAdapter):
             return resp.status_code == 200
         except Exception:
             return False
+
+    def generate(self, data: StockData) -> list[dict]:
+        prompt = build_analysis_prompt(data)
+        try:
+            resp = httpx.post(
+                f"{self.host}/api/chat",
+                json={"model": self.model, "messages": [{"role": "user", "content": prompt}], "stream": False},
+                timeout=120,
+            )
+            content = resp.json()["message"]["content"].strip()
+            if content.startswith("```"):
+                content = content.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+            result = json.loads(content)
+            if isinstance(result, list):
+                return result
+        except Exception:
+            pass
+        return []
 
     def enhance(self, reasons: list[dict], stock_name: str, symbol: str) -> tuple[list[dict], str | None]:
         prompt = build_prompt(reasons, stock_name, symbol)
@@ -56,6 +102,13 @@ class OpenAICompatAdapter(AIAdapter):
 
     def is_available(self) -> bool:
         return bool(self.api_key)
+
+    def generate(self, data: StockData) -> list[dict]:
+        if not self.client:
+            return []
+        prompt = build_analysis_prompt(data)
+        result, error = _call_llm_and_parse(self.client, self.model, prompt)
+        return result or []
 
     def enhance(self, reasons: list[dict], stock_name: str, symbol: str) -> tuple[list[dict], str | None]:
         if not self.client:
