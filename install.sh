@@ -42,6 +42,28 @@ if [ ! -f config.yaml ]; then
     echo "   配置文件路径: $(pwd)/config.yaml"
 fi
 
+# --- 数据源提示 ---
+echo ""
+echo "============================================"
+echo "  数据源选择"
+echo "============================================"
+echo ""
+echo "  1. tushare（免费）"
+echo "     → 访问 tushare.pro 注册获取 token，填入 config.yaml"
+echo "     → 稳定但需 200 积分/年（免费注册可得）"
+echo ""
+echo "  2. 数据仓库包（付费 149 元）"
+echo "     → 预构建 22 字段全量数据库，本地运行，0 延迟"
+echo "     → 含自动更新 + License 绑定本机"
+echo "     → 获取方式: <你的网站>"
+echo ""
+echo "  3. akshare / 新浪（免费备选）"
+echo "     → 无需配置，自动使用"
+echo "     → 网络不稳定，数据可能不完整"
+echo ""
+echo "============================================"
+echo ""
+
 if $USE_DOCKER; then
     echo ""
     echo "Docker 模式安装完成。启动请运行: ./start.sh"
