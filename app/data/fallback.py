@@ -3,6 +3,7 @@ from .akshare_provider import AkshareProvider
 from .tushare_provider import TushareProvider
 from .eastmoney_provider import EastmoneyProvider
 from .sina_provider import SinaProvider
+from .custom_api_provider import CustomApiProvider
 from .cache import get_cached, save_cache
 from ..config import AppConfig
 
@@ -12,6 +13,11 @@ def _build_providers(config: AppConfig) -> list[DataProvider]:
     for name in config.data.provider_order:
         if name == "tushare" and config.data.tushare.token:
             providers.append(TushareProvider(token=config.data.tushare.token))
+        elif name == "custom_api" and config.data.custom_api.api_key:
+            providers.append(CustomApiProvider(
+                url=config.data.custom_api.url,
+                api_key=config.data.custom_api.api_key,
+            ))
         elif name == "akshare":
             providers.append(AkshareProvider())
         elif name == "sina":

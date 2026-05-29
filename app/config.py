@@ -7,9 +7,14 @@ from pydantic import BaseModel
 class TushareConfig(BaseModel):
     token: str = ""
 
+class CustomApiConfig(BaseModel):
+    url: str = "http://localhost:8001"
+    api_key: str = ""
+
 class DataConfig(BaseModel):
     provider_order: list[str] = ["tushare", "akshare", "sina", "eastmoney"]
     tushare: TushareConfig = TushareConfig()
+    custom_api: CustomApiConfig = CustomApiConfig()
     cache_ttl: int = 3600
 
 class ProviderConfig(BaseModel):

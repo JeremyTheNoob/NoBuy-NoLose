@@ -3,15 +3,20 @@
 
 data:
   # 数据源优先级，排前面的优先
+  # custom_api: 自建数据服务（最稳定，需API Key）
   # tushare: 最稳定，推荐。免费注册: https://tushare.pro
   # akshare: 聚合多个免费源（东方财富、同花顺等）
   # sina: 新浪财经，轻量备选
   # eastmoney: 东方财富直连
   provider_order:
+    - custom_api
     - tushare
     - akshare
     - sina
     - eastmoney
+  custom_api:
+    url: http://localhost:8001    # 数据服务地址
+    api_key: ""                   # API Key
   tushare:
     token: ""           # tushare.pro 的 API token，留空自动跳过
   cache_ttl: 3600       # 数据缓存有效期（秒），同代码在 TTL 内不重复拉取
