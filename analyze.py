@@ -47,13 +47,16 @@ def main():
         if warning:
             ai_error = warning
         if adapter and adapter.is_available():
-            print("🤖 正在使用 AI 增强分析结果...\n")
-            reasons, enhance_error = adapter.enhance(reasons, data.info.name or symbol, symbol)
-            ai_provider = adapter.name
-            if enhance_error:
-                ai_error = enhance_error
+            print("🤖 正在使用 AI 生成分析结果...\n")
+            llm_reasons = adapter.generate(data)
+            if llm_reasons and len(llm_reasons) >= 3:
+                reasons = llm_reasons
+                ai_provider = adapter.name
+            else:
+                ai_error = "AI 未生成足够理由，使用规则引擎结果"
+                ai_provider = adapter.name
     except Exception as e:
-        ai_error = f"AI 增强异常: {e}"
+        ai_error = f"AI 调用异常: {e}"
 
     elapsed = time.time() - start
     summary = make_summary(reasons, elapsed, provider_name, ai_provider, ai_error)

@@ -1,4 +1,3 @@
-import uuid
 import time
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
@@ -36,6 +35,7 @@ class AnalyzeResponse(BaseModel):
     stock_name: str
     reasons: list[Reason]
     summary: dict
+    data: dict   # 原始数据: price, pe, pb, industry 等
 
 
 @app.get("/")
@@ -95,4 +95,16 @@ def analyze(req: AnalyzeRequest):
         stock_name=data.info.name or symbol,
         reasons=[Reason(**r) for r in reasons],
         summary=summary,
+        data={
+            "price": data.technical.price,
+            "pe": data.valuation.pe,
+            "pb": data.valuation.pb,
+            "industry": data.info.industry or "",
+            "ma_20": data.technical.ma_20,
+            "ma_60": data.technical.ma_60,
+            "ma_200": data.technical.ma_200,
+            "rsi_14": data.technical.rsi_14,
+            "roe_trend": data.financial.roe_trend,
+            "debt_ratio": data.financial.debt_ratio,
+        },
     )

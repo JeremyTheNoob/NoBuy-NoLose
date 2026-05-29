@@ -33,3 +33,4 @@ data/
 # Dev tools
 .claude/
 docs/
+.pytest_cache/

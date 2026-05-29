@@ -24,9 +24,9 @@ class AIAdapter(ABC):
         """
         ...
 
-    def enhance(self, reasons: list[dict], stock_name: str, symbol: str) -> list[dict]:
-        """（保留兼容）润色已有理由"""
-        return reasons
+    def enhance(self, reasons: list[dict], stock_name: str, symbol: str) -> tuple[list[dict], str | None]:
+        """（保留兼容）润色已有理由，返回 (reasons, error)"""
+        return reasons, None
 
 
 def build_analysis_prompt(data: StockData) -> str:

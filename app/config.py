@@ -12,7 +12,7 @@ class CustomApiConfig(BaseModel):
     api_key: str = ""
 
 class DataConfig(BaseModel):
-    provider_order: list[str] = ["tushare", "akshare", "sina", "eastmoney"]
+    provider_order: list[str] = ["custom_api", "tushare", "akshare", "sina", "eastmoney"]
     tushare: TushareConfig = TushareConfig()
     custom_api: CustomApiConfig = CustomApiConfig()
     cache_ttl: int = 3600

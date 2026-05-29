@@ -2,10 +2,6 @@ from ..data.provider import ValuationData, StockInfo
 from . import load_templates
 
 
-def _fmt(val: float, precision: int = 1) -> str:
-    return f"{val:.{precision}f}"
-
-
 def analyze(valuation: ValuationData, info: StockInfo) -> list[dict]:
     """基于估值数据生成 3-5 条理由"""
     reasons = []

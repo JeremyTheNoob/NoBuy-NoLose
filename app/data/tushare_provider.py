@@ -43,10 +43,10 @@ class TushareProvider(DataProvider):
         if not self.pro:
             return ValuationData()
         try:
-            df = self.pro.daily_basic(ts_code=self._ts_code(symbol), fields="pe,pb,pe_ttm,pb")
+            df = self.pro.daily_basic(ts_code=self._ts_code(symbol), fields="pe_ttm,pb")
             if df.empty:
                 return ValuationData()
-            latest = df.iloc[-1]
+            latest = df.iloc[0]  # tushare 默认降序，最新行在第一个
             return ValuationData(
                 pe=float(latest["pe_ttm"]) if pd.notna(latest.get("pe_ttm")) else None,
                 pb=float(latest["pb"]) if pd.notna(latest.get("pb")) else None,
