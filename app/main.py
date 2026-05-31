@@ -9,6 +9,7 @@ from .config import load_config
 from .data.fallback import fetch_stock_data
 from .engine.aggregator import generate_reasons, make_summary
 from .ai.providers import build_ai_adapter
+from .license import check_access, increment_trial, TRIAL_LIMIT
 
 
 app = FastAPI(title="不买就不会赔", description="A股不值得买分析器", version="1.0.0")
@@ -51,11 +52,29 @@ def health():
     return {"status": "ok"}
 
 
+@app.get("/license")
+def license_status():
+    """查询 License 状态"""
+    return check_access()
+
+
 @app.post("/analyze", response_model=AnalyzeResponse)
 def analyze(req: AnalyzeRequest):
+    # License 检查
+    access = check_access()
+    if not access["allowed"]:
+        raise HTTPException(
+            status_code=402,
+            detail=f'试用次数已用完（{access["trial"]}/{TRIAL_LIMIT}）。请购买 License 解锁无限分析。',
+        )
+
     symbol = req.symbol.strip()
     if not symbol.isdigit() or len(symbol) != 6:
         raise HTTPException(status_code=400, detail="请输入6位数字的A股代码")
+
+    # 试用计数+1
+    if access["reason"] == "trial":
+        increment_trial()
 
     start = time.time()
 

@@ -31,6 +31,14 @@ async function run() {
             body: JSON.stringify({ symbol: symbol }),
             signal: abortCtrl.signal });
         clearTimeout(tid);
+
+        if (resp.status === 402) {
+            var err = await resp.json();
+            showPaywall(err.detail || "试用已用完");
+            hide("loading"); btn.disabled = false;
+            return;
+        }
+
         if (!resp.ok) throw new Error(((await resp.json()).detail) || "请求失败");
         render(await resp.json());
     } catch (e) {
@@ -40,6 +48,44 @@ async function run() {
         clearTimeout(tid); abortCtrl = null;
         hide("loading"); btn.disabled = false;
     }
+}
+
+async function checkLicenseStatus() {
+    try {
+        var resp = await fetch("/license");
+        var data = await resp.json();
+        if (data.reason === "trial") {
+            showTrialBadge(data.remaining);
+        }
+    } catch(e) {}
+}
+
+function showTrialBadge(remaining) {
+    var badge = document.getElementById("trialBadge");
+    if (!badge) {
+        badge = document.createElement("div");
+        badge.id = "trialBadge";
+        badge.style.cssText = "text-align:center;margin-bottom:12px;font-size:12px;color:var(--orange);";
+        document.querySelector(".search-bar").after(badge);
+    }
+    badge.textContent = "免费试用剩余 " + remaining + " 次 · 888 元解锁无限分析";
+    badge.style.cursor = "pointer";
+    badge.onclick = function() { showPaywall(""); };
+}
+
+function showPaywall(msg) {
+    hide("result"); hide("loading"); show("emptyState");
+    document.getElementById("emptyState").innerHTML =
+        '<div class="paywall">' +
+        '<div class="paywall-icon">&#9733;</div>' +
+        '<h2>' + (msg || "免费试用已用完") + '</h2>' +
+        '<p style="margin-top:8px;color:var(--text2)">888 元解锁终身无限分析 · 绑定本机</p>' +
+        '<div class="paywall-features">' +
+        '<span>10条AI深度理由</span><span>四维度全量数据</span><span>每日自动更新</span>' +
+        '</div>' +
+        '<p style="margin-top:16px;font-size:12px;color:var(--muted)">获取方式：联系卖方获取 License Key</p>' +
+        '<p style="font-size:12px;color:var(--muted)">将 Key 文件放入 data/license.key 后重启</p>' +
+        '</div>';
 }
 
 // ---- RENDER ----
@@ -158,3 +204,6 @@ function showError(msg) {
     var e = document.getElementById("error");
     e.textContent = msg; show("error");
 }
+
+// 页面初始化：检查 License 状态
+checkLicenseStatus();
