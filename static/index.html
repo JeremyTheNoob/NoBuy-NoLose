@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>不买就不会赔 — A股不值得买分析器</title>
-    <link rel="stylesheet" href="/static/style.css?v=13" />
+    <link rel="stylesheet" href="/static/style.css?v=14" />
 </head>
 <body>
 
@@ -39,7 +39,6 @@
     <div id="serviceDash" class="service-dash hidden">
         <div class="sd-header">
             <span class="sd-title">服务状态</span>
-            <button id="startAllBtn" class="service-bar-btn hidden">一键启动全部</button>
         </div>
         <div class="sd-grid" id="sdGrid"></div>
     </div>
@@ -79,29 +78,25 @@
                 <div id="customApiFields" class="hidden">
                     <div class="purchase-guide">
                         <h4>尚未购买？</h4>
-                        <p class="purchase-steps">发送邮件至 <strong>weihualiu@live.com</strong>（标题注明"数据仓库购买"），完成支付（一次性 <strong>149 元</strong>）后获取 License Key。</p>
-                        <p class="purchase-included">包含：全量 A 股 22 字段数据库 · PE/PB 历史分位 · 行业均值 · 每日自动更新</p>
+                        <p class="purchase-steps">发送邮件至 <strong>weihualiu@live.com</strong>（标题注明"数据仓库购买"），完成支付（一次性 <strong>149 元</strong>）后获取服务器地址和 License Key。</p>
+                        <p class="purchase-included">包含：全量 A 股 22 字段数据库 · PE/PB 历史分位 · 行业均值 · 每日自动更新 · 通用 REST API</p>
                     </div>
                     <div class="api-preview">
-                        <h5>不只是分析器 — 通用 A 股数据 API</h5>
-                        <p>数据仓库在本地 <code>localhost:8001</code> 提供标准 REST API，可在任何语言中调用：</p>
-                        <pre class="api-example">curl http://localhost:8001/v1/stock/000001 -H "X-API-Key: YOUR_KEY"
-# Python: requests.get("http://localhost:8001/v1/stock/000001", headers={"X-API-Key": "..."})
+                        <h5>通用 A 股数据 API</h5>
+                        <p>购买后获得云端 API 地址，任何语言均可调用：</p>
+                        <pre class="api-example">curl https://你的服务器/v1/stock/000001 -H "X-API-Key: YOUR_KEY"
 # 可用于: 量化回测、自定义看板、Excel 插件、AI Agent 等</pre>
                         <p class="api-fields">返回字段：最新价、PE/PB、PE/PB 历史分位、行业均值、ROE 趋势、负债率、经营现金流、营收增速、MA 均线、MACD、RSI、质押率、高管增减持、监管问询</p>
                     </div>
                     <div class="setup-subsection">
-                        <h5>License Key</h5>
+                        <h5>已购买？填入配置</h5>
                         <div class="setup-field">
+                            <label for="customApiUrl">服务器地址</label>
+                            <input id="customApiUrl" type="text" placeholder="https://你的服务器地址" autocomplete="off" />
+                        </div>
+                        <div class="setup-field">
+                            <label for="customApiKey">License Key</label>
                             <input id="customApiKey" type="password" placeholder="输入 License Key" autocomplete="off" />
-                        </div>
-                        <div id="warehouseStatus" class="warehouse-status hidden"></div>
-                        <div class="setup-actions" style="margin-top:12px;">
-                            <button id="installWarehouseBtn" class="setup-save-btn">一键安装并启动</button>
-                        </div>
-                        <div class="setup-field" style="margin-top:16px;">
-                            <label for="customApiUrl">数据仓库地址</label>
-                            <input id="customApiUrl" type="text" placeholder="http://localhost:8001" autocomplete="off" disabled />
                         </div>
                     </div>
                 </div>
@@ -207,6 +202,6 @@
 </footer>
 
 <script src="/static/ticker.js?v=1"></script>
-<script src="/static/app.js?v=13"></script>
+<script src="/static/app.js?v=14"></script>
 </body>
 </html>

@@ -190,49 +190,6 @@ def services_status():
     return warehouse.all_services_status()
 
 
-@app.post("/api/services/start-all")
-def services_start_all():
-    return warehouse.start_all()
-
-
-@app.get("/api/warehouse/status")
-def warehouse_status():
-    return warehouse.get_status()
-
-
-class WarehouseInstallRequest(BaseModel):
-    license_key: str
-
-
-@app.post("/api/warehouse/install")
-def warehouse_install(req: WarehouseInstallRequest):
-    if not req.license_key.strip():
-        raise HTTPException(status_code=400, detail="请输入 License Key")
-
-    cfg = _config
-    download_url = cfg.data.custom_api.url.rstrip("/") + "/download"
-    if not download_url.startswith("http"):
-        download_url = "https://dl.example.com/warehouse.zip"
-
-    result = warehouse.install(req.license_key.strip(), download_url)
-    if not result["ok"]:
-        raise HTTPException(status_code=400, detail=result["error"])
-    return result
-
-
-@app.post("/api/warehouse/start")
-def warehouse_start():
-    result = warehouse.start()
-    if not result["ok"]:
-        raise HTTPException(status_code=400, detail=result["error"])
-    return result
-
-
-@app.post("/api/warehouse/stop")
-def warehouse_stop():
-    return warehouse.stop()
-
-
 @app.post("/analyze", response_model=AnalyzeResponse)
 def analyze(req: AnalyzeRequest):
     symbol = req.symbol.strip()

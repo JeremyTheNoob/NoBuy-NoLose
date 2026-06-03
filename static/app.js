@@ -214,7 +214,6 @@ function updateDataSourceFields(ds) {
     if (ds === "custom_api") {
         document.getElementById("tushareFields").classList.add("hidden");
         document.getElementById("customApiFields").classList.remove("hidden");
-        checkWarehouseStatus();
     } else {
         document.getElementById("tushareFields").classList.remove("hidden");
         document.getElementById("customApiFields").classList.add("hidden");
@@ -266,7 +265,7 @@ async function saveSetup() {
             body: JSON.stringify({
                 data_source: ds,
                 tushare_token: document.getElementById("tsToken").value || "",
-                custom_api_url: "http://localhost:8001",
+                custom_api_url: document.getElementById("customApiUrl").value || "",
                 custom_api_key: document.getElementById("customApiKey").value || "",
                 ai_provider: provider,
                 api_key: apiKey,
@@ -300,88 +299,7 @@ async function showSetupPage() {
     } catch (e) {}
 }
 
-// ---- warehouse ----
-
-async function checkWarehouseStatus() {
-    try {
-        var resp = await fetch("/api/warehouse/status");
-        var data = await resp.json();
-        var el = document.getElementById("warehouseStatus");
-        var btn = document.getElementById("installWarehouseBtn");
-        var urlField = document.getElementById("customApiUrl");
-
-        if (!data.installed) {
-            el.className = "warehouse-status hidden";
-            btn.classList.remove("hidden");
-            urlField.value = "";
-            urlField.disabled = true;
-        } else if (data.running) {
-            el.className = "warehouse-status running";
-            el.textContent = "数据仓库运行中 · localhost:8001";
-            el.classList.remove("hidden");
-            btn.classList.add("hidden");
-            urlField.value = "http://localhost:8001";
-            urlField.disabled = true;
-        } else {
-            el.className = "warehouse-status stopped";
-            el.textContent = "数据仓库已安装但未运行";
-            el.classList.remove("hidden");
-            btn.classList.remove("hidden");
-            btn.textContent = "启动数据仓库";
-            urlField.value = "http://localhost:8001";
-            urlField.disabled = true;
-        }
-    } catch (e) {}
-}
-
-async function installWarehouse() {
-    var btn = document.getElementById("installWarehouseBtn");
-    var keyInput = document.getElementById("customApiKey");
-    var key = keyInput.value.trim();
-    if (!key) { alert("请先输入 License Key"); return; }
-
-    var statusEl = document.getElementById("warehouseStatus");
-    btn.disabled = true;
-
-    if (btn.textContent === "启动数据仓库") {
-        // Start only
-        statusEl.className = "warehouse-status installing";
-        statusEl.textContent = "正在启动...";
-        statusEl.classList.remove("hidden");
-        try {
-            var resp = await fetch("/api/warehouse/start", { method: "POST" });
-            var data = await resp.json();
-            if (!resp.ok) throw new Error(data.detail || "启动失败");
-        } catch (e) {
-            statusEl.className = "warehouse-status stopped";
-            statusEl.textContent = e.message;
-        }
-    } else {
-        // Install
-        statusEl.className = "warehouse-status installing";
-        statusEl.textContent = "正在下载并安装数据仓库，请耐心等待...";
-        statusEl.classList.remove("hidden");
-        try {
-            var resp = await fetch("/api/warehouse/install", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ license_key: key })
-            });
-            var data = await resp.json();
-            if (!resp.ok) throw new Error(data.detail || "安装失败");
-        } catch (e) {
-            statusEl.className = "warehouse-status stopped";
-            statusEl.textContent = e.message;
-        }
-    }
-
-    checkWarehouseStatus();
-    btn.disabled = false;
-}
-
 // ---- event listeners ----
-
-document.getElementById("installWarehouseBtn").addEventListener("click", installWarehouse);
 document.getElementById("dataSource").addEventListener("change", function() {
     updateDataSourceFields(this.value);
 });
@@ -414,74 +332,29 @@ async function checkServices() {
 function renderServiceDash(data) {
     var dash = document.getElementById("serviceDash");
     var grid = document.getElementById("sdGrid");
-    var startAll = document.getElementById("startAllBtn");
     var svc = data.services;
 
     var cards = [
         {key: "analyzer", s: svc.analyzer},
         {key: "warehouse", s: svc.warehouse},
-        {key: "scheduler", s: svc.scheduler},
         {key: "database", s: svc.database},
     ];
 
-    var anyDown = false;
     var html = "";
     for (var i = 0; i < cards.length; i++) {
-        var c = cards[i];
-        var s = c.s;
-        var running = s.running || (c.key === "analyzer" && s.running !== false) || (c.key === "database" && s.available);
-        var installed = s.installed !== false;
-        var iconClass = running ? "on" : (installed ? "warn" : "off");
-
-        if (!running && installed && c.key !== "database") anyDown = true;
-
-        var detail = s.detail || "";
-        var actionHtml = "";
-        if (!running && installed) {
-            if (c.key === "warehouse") {
-                actionHtml = '<button onclick="startService(\'warehouse\')">启动</button>';
-            } else if (c.key === "scheduler") {
-                actionHtml = '<button onclick="startService(\'scheduler\')">启动</button>';
-            }
-        }
+        var s = cards[i].s;
+        var running = s.running || s.available;
+        var iconClass = running ? "on" : "warn";
 
         html += '<div class="sd-card">' +
             '<span class="sd-icon ' + iconClass + '"></span>' +
             '<div class="sd-name">' + s.name + '</div>' +
-            '<div class="sd-detail">' + detail + '</div>' +
-            (actionHtml ? '<div class="sd-action">' + actionHtml + '</div>' : '') +
+            '<div class="sd-detail">' + (s.detail || "") + '</div>' +
             '</div>';
     }
     grid.innerHTML = html;
-
-    if (anyDown) {
-        startAll.classList.remove("hidden");
-    } else {
-        startAll.classList.add("hidden");
-    }
-
     dash.classList.remove("hidden");
 }
-
-async function startService(name) {
-    var resp = await fetch("/api/" + name + "/start", { method: "POST" });
-    if (resp.ok) {
-        checkServices(); // refresh dashboard
-    } else {
-        var e = await resp.json();
-        alert("启动失败: " + (e.detail || "未知错误"));
-    }
-}
-
-document.getElementById("startAllBtn").addEventListener("click", async function() {
-    var btn = this;
-    btn.disabled = true;
-    btn.textContent = "启动中...";
-    await fetch("/api/services/start-all", { method: "POST" });
-    checkServices();
-    btn.disabled = false;
-    btn.textContent = "一键启动全部";
-});
 
 // ---- update check ----
 async function checkUpdate() {
