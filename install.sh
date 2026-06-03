@@ -67,8 +67,19 @@ else
     echo "正在创建 Python 虚拟环境..."
     python3 -m venv .venv
     . .venv/bin/activate
-    pip install --upgrade pip -q
-    pip install -r requirements.txt -q
+
+    # 优先用清华镜像（国内快很多），不可用时回退到官方源
+    MIRROR="https://pypi.tuna.tsinghua.edu.cn/simple"
+    if python3 -c "import urllib.request; urllib.request.urlopen('$MIRROR', timeout=5)" 2>/dev/null; then
+        echo "使用清华 PyPI 镜像"
+        PIP_MIRROR="-i $MIRROR"
+    else
+        echo "使用官方 PyPI"
+        PIP_MIRROR=""
+    fi
+
+    pip install --upgrade pip -q $PIP_MIRROR
+    pip install -r requirements.txt -q $PIP_MIRROR
     mkdir -p data
     echo ""
     echo "本地安装完成。启动请运行: ./start.sh"
