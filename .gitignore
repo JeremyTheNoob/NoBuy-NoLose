@@ -29,6 +29,11 @@ env/
 .env.local
 config.yaml
 data/
+# 收款码等敏感图片不要提交
+*.JPG
+*.jpeg
+*.png
+*.jpg
 
 # Dev tools
 .claude/
