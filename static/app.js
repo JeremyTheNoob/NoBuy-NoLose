@@ -314,53 +314,8 @@ document.getElementById("settingsBtn").addEventListener("click", function() {
 // check config on load, then updates
 (async function init() {
     await checkConfig();
-    if (configured) {
-        checkUpdate();
-        checkServices();
-    }
+    if (configured) checkUpdate();
 })();
-
-// ---- service dashboard ----
-async function checkServices() {
-    try {
-        var resp = await fetch("/api/services");
-        var data = await resp.json();
-        renderServiceDash(data);
-    } catch (e) {}
-}
-
-function renderServiceDash(data) {
-    var dash = document.getElementById("serviceDash");
-    var grid = document.getElementById("sdGrid");
-    var svc = data.services;
-
-    var cards = [
-        {key: "analyzer", s: svc.analyzer},
-        {key: "warehouse", s: svc.warehouse},
-        {key: "database", s: svc.database},
-    ];
-
-    var html = "";
-    for (var i = 0; i < cards.length; i++) {
-        var s = cards[i].s;
-        var running = s.running || s.available;
-        var iconClass = running ? "on" : "warn";
-
-        var hintHtml = "";
-        if (s.hint) {
-            hintHtml = '<div class="sd-hint"><a href="https://smbnp.cloud/stock/buy" target="_blank">升级 Pro 数据源</a></div>';
-        }
-
-        html += '<div class="sd-card">' +
-            '<span class="sd-icon ' + iconClass + '"></span>' +
-            '<div class="sd-name">' + s.name + '</div>' +
-            '<div class="sd-detail">' + (s.detail || "") + '</div>' +
-            hintHtml +
-            '</div>';
-    }
-    grid.innerHTML = html;
-    dash.classList.remove("hidden");
-}
 
 // ---- update check ----
 async function checkUpdate() {

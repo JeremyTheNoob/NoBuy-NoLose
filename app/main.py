@@ -9,23 +9,12 @@ from .config import load_config, save_config
 from .data.fallback import fetch_stock_data
 from .engine.aggregator import generate_reasons, make_summary
 from .ai.providers import build_ai_adapter
-from . import warehouse, version
+from . import version
 
 
 app = FastAPI(title="不买就不会赔", description="A股不值得买分析器", version="1.0.0")
 
 _config = load_config()
-
-
-@app.on_event("startup")
-def _on_startup():
-    """启动时自动拉起数据仓库（如果已安装）"""
-    try:
-        status = warehouse.get_status()
-        if status["installed"] and not status["running"]:
-            warehouse.start()
-    except Exception:
-        pass
 
 
 def _reload_config() -> None:
@@ -35,9 +24,7 @@ def _reload_config() -> None:
 
 def _config_configured() -> bool:
     cfg = _config
-    tushare_ok = bool(cfg.data.tushare.token)
-    custom_api_ok = bool(cfg.data.custom_api.url and cfg.data.custom_api.api_key)
-    data_ok = tushare_ok or custom_api_ok
+    data_ok = bool(cfg.data.tushare.token) or bool(cfg.data.custom_api.url and cfg.data.custom_api.api_key)
 
     ai = cfg.ai
     provider = ai.provider
@@ -183,11 +170,6 @@ def save_setup(req: SetupRequest):
         raise HTTPException(status_code=500, detail=f"保存配置失败: {e}")
 
     return {"status": "ok", "message": "配置已保存"}
-
-
-@app.get("/api/services")
-def services_status():
-    return warehouse.all_services_status()
 
 
 @app.post("/analyze", response_model=AnalyzeResponse)
