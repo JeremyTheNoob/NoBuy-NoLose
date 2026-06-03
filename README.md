@@ -50,6 +50,20 @@ python analyze.py 000001
 
 系统自动降级，无需手动切换。支持本地缓存，同代码 TTL 内秒返。
 
+### 自定义数据源
+
+支持通过兼容 API 接入自建或第三方数据源，需实现以下接口：
+
+```
+GET /v1/stock/{symbol}  →  {code, name, pe, pb, price, ...22字段}
+GET /health             →  {status: "ok"}
+```
+
+鉴权方式：`X-API-Key` 请求头。
+
+> 我们提供预构建的企业级数据仓库，全量 A 股 22 字段 + 每日自动更新：
+> **[smbnp.cloud/stock/buy](https://smbnp.cloud/stock/buy)**
+
 ## AI 模型
 
 支持 DeepSeek / 通义千问 / 智谱 GLM / Moonshot / Ollama / OpenAI 及自定义兼容接口。

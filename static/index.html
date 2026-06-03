@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>不买就不会赔 — A股不值得买分析器</title>
-    <link rel="stylesheet" href="/static/style.css?v=16" />
+    <link rel="stylesheet" href="/static/style.css?v=17" />
 </head>
 <body>
 
@@ -84,7 +84,7 @@
                         <label for="customApiKey">API Key</label>
                         <input id="customApiKey" type="password" placeholder="输入 API Key" autocomplete="off" />
                     </div>
-                    <p class="field-hint">兼容 OpenAI 格式的 API 数据源。接口规范见 <a href="https://github.com/JeremyTheNoob/NoBuy-NoLose" target="_blank">README</a></p>
+                    <p class="field-hint">需实现 GET /v1/stock/{symbol} 接口（22字段）。<a href="https://gitee.com/JeremyTheNoob/NoBuy-NoLose#%E8%87%AA%E5%AE%9A%E4%B9%89%E6%95%B0%E6%8D%AE%E6%BA%90" target="_blank">接口规范与 Pro 数据源</a></p>
                 </div>
             </section>
 
@@ -188,6 +188,6 @@
 </footer>
 
 <script src="/static/ticker.js?v=1"></script>
-<script src="/static/app.js?v=16"></script>
+<script src="/static/app.js?v=17"></script>
 </body>
 </html>
