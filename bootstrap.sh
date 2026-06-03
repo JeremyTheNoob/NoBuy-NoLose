@@ -18,10 +18,23 @@ OS="$(uname -s)"
 case "$OS" in
     Darwin)  OS_NAME="macOS" ;;
     Linux)   OS_NAME="Linux" ;;
-    MINGW*|MSYS*|CYGWIN*) OS_NAME="Windows" ;;
+    MINGW*|MSYS*|CYGWIN*) OS_NAME="Windows (Git Bash)" ;;
     *)       OS_NAME="$OS" ;;
 esac
 echo "系统: $OS_NAME"
+
+# Windows CMD/PowerShell 不支持 bash，引导用户
+if [ "$OS_NAME" = "$OS" ] && [ "$OS" != "Darwin" ] && [ "$OS" != "Linux" ]; then
+    echo ""
+    echo "当前环境不支持直接运行此脚本。"
+    echo "Windows 用户请："
+    echo "  1. 安装 Git for Windows: https://git-scm.com/downloads/win"
+    echo "  2. 打开 Git Bash，重新运行本命令"
+    echo ""
+    echo "  或安装 Python 后："
+    echo "  python -c \"import urllib.request; exec(urllib.request.urlopen('https://gitee.com/JeremyTheNoob/NoBuy-NoLose/raw/master/bootstrap.py').read())\""
+    exit 1
+fi
 
 # --- Python 检测与安装指引 ---
 PY_CMD=""

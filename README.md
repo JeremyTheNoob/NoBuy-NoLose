@@ -4,33 +4,42 @@
 
 ## 快速开始
 
-### 国内用户（Gitee，推荐）
+### Mac / Linux
 
-```bash
-git clone https://gitee.com/JeremyTheNoob/NoBuy-NoLose.git
-cd NoBuy-NoLose
-./install.sh
-./start.sh
-```
-
-### 海外用户（GitHub）
-
-```bash
-git clone https://github.com/JeremyTheNoob/NoBuy-NoLose.git
-cd NoBuy-NoLose
-./install.sh
-./start.sh
-```
-
-### 一键安装（无需 git / Python 亦可）
+打开 **终端**（Terminal），粘贴以下命令回车：
 
 ```bash
 bash <(curl -fsSL https://gitee.com/JeremyTheNoob/NoBuy-NoLose/raw/master/bootstrap.sh)
 ```
 
-> 脚本自动检测平台、安装依赖、下载项目。浏览器打开 `http://localhost:8000` 即可使用。
+脚本会自动安装 Python（如需要）、下载项目、配置环境。完成后浏览器打开 `http://localhost:8000`。
 
-### CLI
+### Windows
+
+**方法一：安装 Python 后运行**（推荐）
+
+1. 访问 [python.org](https://www.python.org/downloads/) 下载安装 Python 3.10+
+   - 安装时 **务必勾选**「Add Python to PATH」
+2. 打开 **命令提示符**（Win+R → 输入 `cmd` → 回车），粘贴：
+
+```cmd
+python -c "import urllib.request; exec(urllib.request.urlopen('https://gitee.com/JeremyTheNoob/NoBuy-NoLose/raw/master/bootstrap.py').read())"
+```
+
+**方法二：安装 Git Bash 后运行**
+
+1. 访问 [git-scm.com](https://git-scm.com/downloads/win) 下载安装 Git for Windows
+2. 打开 **Git Bash**，粘贴：
+
+```bash
+bash <(curl -fsSL https://gitee.com/JeremyTheNoob/NoBuy-NoLose/raw/master/bootstrap.sh)
+```
+
+### 如果上面都不行
+
+直接下载压缩包：打开 [Gitee 仓库](https://gitee.com/JeremyTheNoob/NoBuy-NoLose) → 点击「克隆/下载」→「下载 ZIP」→ 解压 → 双击 `install.sh`（Mac/Linux）或在命令行中运行 `python install.py`（Windows）。
+
+### CLI 命令行
 
 ```bash
 python analyze.py 000001
