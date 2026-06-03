@@ -10,6 +10,7 @@ class TushareConfig(BaseModel):
 class CustomApiConfig(BaseModel):
     url: str = "http://localhost:8001"
     api_key: str = ""
+    download_url: str = ""  # 数据仓库安装包下载地址
 
 class DataConfig(BaseModel):
     provider_order: list[str] = ["custom_api", "tushare", "akshare", "sina", "eastmoney"]
@@ -54,3 +55,21 @@ def load_config(config_path: str | None = None) -> AppConfig:
         raw = yaml.safe_load(f) or {}
 
     return AppConfig(**raw)
+
+
+def _config_path() -> str:
+    return os.environ.get("MT_CONFIG", "config.yaml")
+
+
+def save_config(config: AppConfig, config_path: str | None = None) -> None:
+    if config_path is None:
+        config_path = _config_path()
+
+    with open(config_path, "w", encoding="utf-8") as f:
+        yaml.dump(
+            config.model_dump(mode="python"),
+            f,
+            allow_unicode=True,
+            default_flow_style=False,
+            sort_keys=False,
+        )

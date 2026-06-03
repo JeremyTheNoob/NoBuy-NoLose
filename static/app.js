@@ -1,4 +1,4 @@
-var TIMEOUT = 60000, abortCtrl = null;
+var TIMEOUT = 60000, abortCtrl = null, configured = false;
 
 document.getElementById("analyzeBtn").addEventListener("click", run);
 document.getElementById("abortBtn").addEventListener("click", abort);
@@ -32,13 +32,6 @@ async function run() {
             signal: abortCtrl.signal });
         clearTimeout(tid);
 
-        if (resp.status === 402) {
-            var err = await resp.json();
-            showPaywall(err.detail || "试用已用完");
-            hide("loading"); btn.disabled = false;
-            return;
-        }
-
         if (!resp.ok) throw new Error(((await resp.json()).detail) || "请求失败");
         render(await resp.json());
     } catch (e) {
@@ -48,44 +41,6 @@ async function run() {
         clearTimeout(tid); abortCtrl = null;
         hide("loading"); btn.disabled = false;
     }
-}
-
-async function checkLicenseStatus() {
-    try {
-        var resp = await fetch("/license");
-        var data = await resp.json();
-        if (data.reason === "trial") {
-            showTrialBadge(data.remaining);
-        }
-    } catch(e) {}
-}
-
-function showTrialBadge(remaining) {
-    var badge = document.getElementById("trialBadge");
-    if (!badge) {
-        badge = document.createElement("div");
-        badge.id = "trialBadge";
-        badge.style.cssText = "text-align:center;margin-bottom:12px;font-size:12px;color:var(--orange);";
-        document.querySelector(".search-bar").after(badge);
-    }
-    badge.textContent = "免费试用剩余 " + remaining + " 次 · 888 元解锁无限分析";
-    badge.style.cursor = "pointer";
-    badge.onclick = function() { showPaywall(""); };
-}
-
-function showPaywall(msg) {
-    hide("result"); hide("loading"); show("emptyState");
-    document.getElementById("emptyState").innerHTML =
-        '<div class="paywall">' +
-        '<div class="paywall-icon">&#9733;</div>' +
-        '<h2>' + (msg || "免费试用已用完") + '</h2>' +
-        '<p style="margin-top:8px;color:var(--text2)">888 元解锁终身无限分析 · 绑定本机</p>' +
-        '<div class="paywall-features">' +
-        '<span>10条AI深度理由</span><span>四维度全量数据</span><span>每日自动更新</span>' +
-        '</div>' +
-        '<p style="margin-top:16px;font-size:12px;color:var(--muted)">获取方式：联系卖方获取 License Key</p>' +
-        '<p style="font-size:12px;color:var(--muted)">将 Key 文件放入 data/license.key 后重启</p>' +
-        '</div>';
 }
 
 // ---- RENDER ----
@@ -205,5 +160,376 @@ function showError(msg) {
     e.textContent = msg; show("error");
 }
 
-// 页面初始化：检查 License 状态
-checkLicenseStatus();
+// ---- setup ----
+
+async function checkConfig() {
+    try {
+        var resp = await fetch("/api/config");
+        if (!resp.ok) return;
+        var data = await resp.json();
+        configured = data.configured;
+        if (configured) {
+            hide("setupPage");
+            show("emptyState");
+            document.getElementById("settingsBtn").classList.remove("hidden");
+        } else {
+            prefillSetupForm(data.config);
+            hide("emptyState");
+            show("setupPage");
+        }
+    } catch (e) {
+        // server not ready, show normal UI
+    }
+}
+
+function prefillSetupForm(config) {
+    var d = config.data || {}, ai = config.ai || {};
+
+    // Data source: detect which one is configured
+    var customApi = d.custom_api || {};
+    var hasCustomApi = !!(customApi.api_key);
+    var ds = hasCustomApi ? "custom_api" : "tushare";
+    document.getElementById("dataSource").value = ds;
+    updateDataSourceFields(ds);
+    document.getElementById("tsToken").value = (d.tushare || {}).token || "";
+    document.getElementById("customApiUrl").value = customApi.url || "";
+    document.getElementById("customApiKey").value = customApi.api_key || "";
+
+    var provider = ai.provider || "none";
+    document.getElementById("aiProvider").value = provider;
+    updateProviderFields(provider);
+    if (provider === "none") return;
+    var prov = ai[provider] || {};
+    if (provider === "ollama") {
+        document.getElementById("ollamaHost").value = prov.host || "";
+        document.getElementById("aiModel").value = prov.model || "";
+    } else {
+        document.getElementById("aiApiKey").value = prov.api_key || "";
+        document.getElementById("aiModel").value = prov.model || "";
+        document.getElementById("aiBaseUrl").value = prov.base_url || "";
+    }
+}
+
+function updateDataSourceFields(ds) {
+    if (ds === "custom_api") {
+        document.getElementById("tushareFields").classList.add("hidden");
+        document.getElementById("customApiFields").classList.remove("hidden");
+        checkWarehouseStatus();
+    } else {
+        document.getElementById("tushareFields").classList.remove("hidden");
+        document.getElementById("customApiFields").classList.add("hidden");
+    }
+}
+
+function updateProviderFields(provider) {
+    ["apiKeyField","modelField","baseUrlField","ollamaHostField"].forEach(function(id) {
+        document.getElementById(id).classList.add("hidden");
+    });
+    if (provider === "none") return;
+    document.getElementById("modelField").classList.remove("hidden");
+    if (provider === "ollama") {
+        document.getElementById("ollamaHostField").classList.remove("hidden");
+    } else {
+        document.getElementById("apiKeyField").classList.remove("hidden");
+        document.getElementById("baseUrlField").classList.remove("hidden");
+    }
+}
+
+async function saveSetup() {
+    var btn = document.getElementById("saveConfigBtn");
+    var errEl = document.getElementById("setupError");
+    btn.disabled = true;
+    errEl.classList.add("hidden");
+
+    var ds = document.getElementById("dataSource").value;
+    var provider = document.getElementById("aiProvider").value;
+
+    if (ds === "tushare") {
+        if (!document.getElementById("tsToken").value.trim()) {
+            showSetupError("请输入 Tushare Token"); btn.disabled = false; return;
+        }
+    } else {
+        if (!document.getElementById("customApiKey").value.trim()) {
+            showSetupError("请输入 License Key"); btn.disabled = false; return;
+        }
+    }
+
+    if (provider === "none") { showSetupError("请选择 AI 服务商"); btn.disabled = false; return; }
+
+    var apiKey = document.getElementById("aiApiKey").value || "";
+    if (provider !== "ollama" && !apiKey) { showSetupError("请输入 API Key"); btn.disabled = false; return; }
+
+    try {
+        var resp = await fetch("/api/config", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                data_source: ds,
+                tushare_token: document.getElementById("tsToken").value || "",
+                custom_api_url: "http://localhost:8001",
+                custom_api_key: document.getElementById("customApiKey").value || "",
+                ai_provider: provider,
+                api_key: apiKey,
+                model: document.getElementById("aiModel").value || "",
+                base_url: document.getElementById("aiBaseUrl").value || "",
+                host: document.getElementById("ollamaHost").value || ""
+            })
+        });
+        if (!resp.ok) { var e = await resp.json(); throw new Error(e.detail || "保存失败"); }
+        location.reload();
+    } catch (e) {
+        showSetupError(e.message);
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+function showSetupError(msg) {
+    var el = document.getElementById("setupError");
+    el.textContent = msg;
+    el.classList.remove("hidden");
+}
+
+async function showSetupPage() {
+    try {
+        var resp = await fetch("/api/config");
+        var data = await resp.json();
+        prefillSetupForm(data.config);
+        hide("emptyState"); hide("result"); hide("error");
+        show("setupPage");
+    } catch (e) {}
+}
+
+// ---- warehouse ----
+
+async function checkWarehouseStatus() {
+    try {
+        var resp = await fetch("/api/warehouse/status");
+        var data = await resp.json();
+        var el = document.getElementById("warehouseStatus");
+        var btn = document.getElementById("installWarehouseBtn");
+        var urlField = document.getElementById("customApiUrl");
+
+        if (!data.installed) {
+            el.className = "warehouse-status hidden";
+            btn.classList.remove("hidden");
+            urlField.value = "";
+            urlField.disabled = true;
+        } else if (data.running) {
+            el.className = "warehouse-status running";
+            el.textContent = "数据仓库运行中 · localhost:8001";
+            el.classList.remove("hidden");
+            btn.classList.add("hidden");
+            urlField.value = "http://localhost:8001";
+            urlField.disabled = true;
+        } else {
+            el.className = "warehouse-status stopped";
+            el.textContent = "数据仓库已安装但未运行";
+            el.classList.remove("hidden");
+            btn.classList.remove("hidden");
+            btn.textContent = "启动数据仓库";
+            urlField.value = "http://localhost:8001";
+            urlField.disabled = true;
+        }
+    } catch (e) {}
+}
+
+async function installWarehouse() {
+    var btn = document.getElementById("installWarehouseBtn");
+    var keyInput = document.getElementById("customApiKey");
+    var key = keyInput.value.trim();
+    if (!key) { alert("请先输入 License Key"); return; }
+
+    var statusEl = document.getElementById("warehouseStatus");
+    btn.disabled = true;
+
+    if (btn.textContent === "启动数据仓库") {
+        // Start only
+        statusEl.className = "warehouse-status installing";
+        statusEl.textContent = "正在启动...";
+        statusEl.classList.remove("hidden");
+        try {
+            var resp = await fetch("/api/warehouse/start", { method: "POST" });
+            var data = await resp.json();
+            if (!resp.ok) throw new Error(data.detail || "启动失败");
+        } catch (e) {
+            statusEl.className = "warehouse-status stopped";
+            statusEl.textContent = e.message;
+        }
+    } else {
+        // Install
+        statusEl.className = "warehouse-status installing";
+        statusEl.textContent = "正在下载并安装数据仓库，请耐心等待...";
+        statusEl.classList.remove("hidden");
+        try {
+            var resp = await fetch("/api/warehouse/install", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ license_key: key })
+            });
+            var data = await resp.json();
+            if (!resp.ok) throw new Error(data.detail || "安装失败");
+        } catch (e) {
+            statusEl.className = "warehouse-status stopped";
+            statusEl.textContent = e.message;
+        }
+    }
+
+    checkWarehouseStatus();
+    btn.disabled = false;
+}
+
+// ---- event listeners ----
+
+document.getElementById("installWarehouseBtn").addEventListener("click", installWarehouse);
+document.getElementById("dataSource").addEventListener("change", function() {
+    updateDataSourceFields(this.value);
+});
+document.getElementById("saveConfigBtn").addEventListener("click", saveSetup);
+document.getElementById("aiProvider").addEventListener("change", function() {
+    updateProviderFields(this.value);
+});
+document.getElementById("settingsBtn").addEventListener("click", function() {
+    showSetupPage();
+});
+
+// check config on load, then updates
+(async function init() {
+    await checkConfig();
+    if (configured) {
+        checkUpdate();
+        checkServices();
+    }
+})();
+
+// ---- service dashboard ----
+async function checkServices() {
+    try {
+        var resp = await fetch("/api/services");
+        var data = await resp.json();
+        renderServiceDash(data);
+    } catch (e) {}
+}
+
+function renderServiceDash(data) {
+    var dash = document.getElementById("serviceDash");
+    var grid = document.getElementById("sdGrid");
+    var startAll = document.getElementById("startAllBtn");
+    var svc = data.services;
+
+    var cards = [
+        {key: "analyzer", s: svc.analyzer},
+        {key: "warehouse", s: svc.warehouse},
+        {key: "scheduler", s: svc.scheduler},
+        {key: "database", s: svc.database},
+    ];
+
+    var anyDown = false;
+    var html = "";
+    for (var i = 0; i < cards.length; i++) {
+        var c = cards[i];
+        var s = c.s;
+        var running = s.running || (c.key === "analyzer" && s.running !== false) || (c.key === "database" && s.available);
+        var installed = s.installed !== false;
+        var iconClass = running ? "on" : (installed ? "warn" : "off");
+
+        if (!running && installed && c.key !== "database") anyDown = true;
+
+        var detail = s.detail || "";
+        var actionHtml = "";
+        if (!running && installed) {
+            if (c.key === "warehouse") {
+                actionHtml = '<button onclick="startService(\'warehouse\')">启动</button>';
+            } else if (c.key === "scheduler") {
+                actionHtml = '<button onclick="startService(\'scheduler\')">启动</button>';
+            }
+        }
+
+        html += '<div class="sd-card">' +
+            '<span class="sd-icon ' + iconClass + '"></span>' +
+            '<div class="sd-name">' + s.name + '</div>' +
+            '<div class="sd-detail">' + detail + '</div>' +
+            (actionHtml ? '<div class="sd-action">' + actionHtml + '</div>' : '') +
+            '</div>';
+    }
+    grid.innerHTML = html;
+
+    if (anyDown) {
+        startAll.classList.remove("hidden");
+    } else {
+        startAll.classList.add("hidden");
+    }
+
+    dash.classList.remove("hidden");
+}
+
+async function startService(name) {
+    var resp = await fetch("/api/" + name + "/start", { method: "POST" });
+    if (resp.ok) {
+        checkServices(); // refresh dashboard
+    } else {
+        var e = await resp.json();
+        alert("启动失败: " + (e.detail || "未知错误"));
+    }
+}
+
+document.getElementById("startAllBtn").addEventListener("click", async function() {
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = "启动中...";
+    await fetch("/api/services/start-all", { method: "POST" });
+    checkServices();
+    btn.disabled = false;
+    btn.textContent = "一键启动全部";
+});
+
+// ---- update check ----
+async function checkUpdate() {
+    try {
+        var resp = await fetch("/api/version");
+        var data = await resp.json();
+        if (data.has_update) {
+            var badge = document.getElementById("updateBadge");
+            badge.textContent = "v" + data.latest + " 可用";
+            badge.classList.remove("hidden");
+            badge.onclick = function() { showUpdateModal(data); };
+        }
+    } catch (e) {}
+}
+
+function showUpdateModal(info) {
+    var existing = document.querySelector(".update-modal-overlay");
+    if (existing) existing.remove();
+
+    var overlay = document.createElement("div");
+    overlay.className = "update-modal-overlay";
+    overlay.innerHTML =
+        '<div class="update-modal">' +
+        '<h3>发现新版本 v' + info.latest + '</h3>' +
+        '<p>当前版本: v' + info.current + ' &rarr; v' + info.latest + '</p>' +
+        (info.release_notes ? '<div class="update-notes">' + info.release_notes + '</div>' : '') +
+        '<div class="update-modal-btns">' +
+        '<button class="btn-update-later" onclick="this.closest(\'.update-modal-overlay\').remove()">以后再说</button>' +
+        '<button class="btn-update-now" id="btnUpdateNow">立即更新</button>' +
+        '</div></div>';
+    document.body.appendChild(overlay);
+
+    document.getElementById("btnUpdateNow").addEventListener("click", async function() {
+        var btn = this;
+        btn.disabled = true;
+        btn.textContent = "更新中...";
+        try {
+            var resp = await fetch("/api/update", { method: "POST" });
+            var data = await resp.json();
+            if (!resp.ok) throw new Error(data.detail || "更新失败");
+            overlay.querySelector(".update-modal").innerHTML =
+                '<h3>更新完成</h3><p>' + data.message + '</p>' +
+                '<div class="update-modal-btns"><button class="btn-update-now" onclick="location.reload()">重启服务</button></div>';
+        } catch (e) {
+            btn.disabled = false;
+            btn.textContent = "立即更新";
+            alert("更新失败: " + e.message);
+        }
+    });
+}
+

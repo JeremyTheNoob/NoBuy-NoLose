@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>不买就不会赔 — A股不值得买分析器</title>
-    <link rel="stylesheet" href="/static/style.css?v=5" />
+    <link rel="stylesheet" href="/static/style.css?v=13" />
 </head>
 <body>
 
@@ -16,6 +16,10 @@
             <input id="symbolInput" type="text" placeholder="输入股票代码" maxlength="6" autofocus />
             <button id="analyzeBtn">分析</button>
         </div>
+        <span id="updateBadge" class="update-badge hidden" title="有新版本可用"></span>
+        <button id="settingsBtn" class="topbar-icon-btn hidden" title="设置">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.902 3.433 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.54-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/></svg>
+        </button>
     </div>
 </nav>
 
@@ -31,6 +35,15 @@
     <!-- Error -->
     <div id="error" class="error-banner hidden"></div>
 
+    <!-- 服务仪表盘 -->
+    <div id="serviceDash" class="service-dash hidden">
+        <div class="sd-header">
+            <span class="sd-title">服务状态</span>
+            <button id="startAllBtn" class="service-bar-btn hidden">一键启动全部</button>
+        </div>
+        <div class="sd-grid" id="sdGrid"></div>
+    </div>
+
     <!-- Empty state -->
     <div id="emptyState" class="empty-state">
         <div class="ticker-wrap">
@@ -38,6 +51,100 @@
         </div>
         <h2>输入 A 股代码，查看不值得购买的理由</h2>
         <p>基于估值、财务、技术、风险四维度数据，AI 生成 10 条理性分析</p>
+    </div>
+
+    <!-- ====== 设置页面 ====== -->
+    <div id="setupPage" class="setup-page hidden">
+        <div class="setup-card">
+            <h2>首次使用设置</h2>
+            <p class="setup-subtitle">配置数据源和 AI 模型后即可开始分析</p>
+
+            <section class="setup-section">
+                <h3>数据源</h3>
+                <div class="setup-field">
+                    <label for="dataSource">选择数据源</label>
+                    <select id="dataSource">
+                        <option value="tushare">Tushare（基础数据约 200 元/年起）</option>
+                        <option value="custom_api">自建数据仓库（一次性 149 元，全量 A 股本地数据库）</option>
+                    </select>
+                </div>
+                <div id="tushareFields">
+                    <div class="setup-field">
+                        <label for="tsToken">Tushare Token</label>
+                        <input id="tsToken" type="text" placeholder="输入 tushare.pro 的 API token" autocomplete="off" />
+                        <p class="field-hint">注册并充值积分：<a href="https://tushare.pro" target="_blank">tushare.pro</a>，登录后在"个人主页"复制 Token</p>
+                        <p class="field-hint ds-note">云端服务，填入 Token 即可使用，无需本地部署</p>
+                    </div>
+                </div>
+                <div id="customApiFields" class="hidden">
+                    <div class="purchase-guide">
+                        <h4>尚未购买？</h4>
+                        <p class="purchase-steps">发送邮件至 <strong>weihualiu@live.com</strong>（标题注明"数据仓库购买"），完成支付（一次性 <strong>149 元</strong>）后获取 License Key。</p>
+                        <p class="purchase-included">包含：全量 A 股 22 字段数据库 · PE/PB 历史分位 · 行业均值 · 每日自动更新</p>
+                    </div>
+                    <div class="api-preview">
+                        <h5>不只是分析器 — 通用 A 股数据 API</h5>
+                        <p>数据仓库在本地 <code>localhost:8001</code> 提供标准 REST API，可在任何语言中调用：</p>
+                        <pre class="api-example">curl http://localhost:8001/v1/stock/000001 -H "X-API-Key: YOUR_KEY"
+# Python: requests.get("http://localhost:8001/v1/stock/000001", headers={"X-API-Key": "..."})
+# 可用于: 量化回测、自定义看板、Excel 插件、AI Agent 等</pre>
+                        <p class="api-fields">返回字段：最新价、PE/PB、PE/PB 历史分位、行业均值、ROE 趋势、负债率、经营现金流、营收增速、MA 均线、MACD、RSI、质押率、高管增减持、监管问询</p>
+                    </div>
+                    <div class="setup-subsection">
+                        <h5>License Key</h5>
+                        <div class="setup-field">
+                            <input id="customApiKey" type="password" placeholder="输入 License Key" autocomplete="off" />
+                        </div>
+                        <div id="warehouseStatus" class="warehouse-status hidden"></div>
+                        <div class="setup-actions" style="margin-top:12px;">
+                            <button id="installWarehouseBtn" class="setup-save-btn">一键安装并启动</button>
+                        </div>
+                        <div class="setup-field" style="margin-top:16px;">
+                            <label for="customApiUrl">数据仓库地址</label>
+                            <input id="customApiUrl" type="text" placeholder="http://localhost:8001" autocomplete="off" disabled />
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="setup-section">
+                <h3>AI 模型</h3>
+                <div class="setup-field">
+                    <label for="aiProvider">服务商</label>
+                    <select id="aiProvider">
+                        <option value="none">-- 请选择 --</option>
+                        <option value="deepseek">DeepSeek（推荐）</option>
+                        <option value="qwen">通义千问 (Qwen)</option>
+                        <option value="zhipu">智谱 (GLM)</option>
+                        <option value="moonshot">月之暗面 (Moonshot)</option>
+                        <option value="openai">OpenAI</option>
+                        <option value="ollama">Ollama (本地部署)</option>
+                        <option value="custom">自定义 (OpenAI 兼容接口)</option>
+                    </select>
+                </div>
+                <div id="apiKeyField" class="setup-field hidden">
+                    <label for="aiApiKey">API Key</label>
+                    <input id="aiApiKey" type="password" placeholder="输入 API Key" autocomplete="off" />
+                </div>
+                <div id="modelField" class="setup-field hidden">
+                    <label for="aiModel">模型名称</label>
+                    <input id="aiModel" type="text" placeholder="留空使用默认模型" />
+                </div>
+                <div id="baseUrlField" class="setup-field hidden">
+                    <label for="aiBaseUrl">API 地址</label>
+                    <input id="aiBaseUrl" type="text" placeholder="留空使用默认地址" />
+                </div>
+                <div id="ollamaHostField" class="setup-field hidden">
+                    <label for="ollamaHost">Ollama 服务地址</label>
+                    <input id="ollamaHost" type="text" placeholder="http://localhost:11434" />
+                </div>
+            </section>
+
+            <div class="setup-actions">
+                <div id="setupError" class="setup-error hidden"></div>
+                <button id="saveConfigBtn" class="setup-save-btn">保存设置</button>
+            </div>
+        </div>
     </div>
 
     <!-- ====== 结果区 ====== -->
@@ -100,6 +207,6 @@
 </footer>
 
 <script src="/static/ticker.js?v=1"></script>
-<script src="/static/app.js?v=6"></script>
+<script src="/static/app.js?v=13"></script>
 </body>
 </html>

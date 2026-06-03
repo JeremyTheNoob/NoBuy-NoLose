@@ -4,6 +4,17 @@
 
 ## 快速开始
 
+### 国内用户（Gitee，推荐）
+
+```bash
+git clone https://gitee.com/JeremyTheNoob/NoBuy-NoLose.git
+cd NoBuy-NoLose
+./install.sh
+./start.sh
+```
+
+### 海外用户（GitHub）
+
 ```bash
 git clone https://github.com/JeremyTheNoob/NoBuy-NoLose.git
 cd NoBuy-NoLose
@@ -11,18 +22,19 @@ cd NoBuy-NoLose
 ./start.sh
 ```
 
-浏览器打开 `http://localhost:8000`，输入代码即可。
+### 一键安装（无需 git / Python 亦可）
 
-CLI：
+```bash
+bash <(curl -fsSL https://gitee.com/JeremyTheNoob/NoBuy-NoLose/raw/master/bootstrap.sh)
+```
+
+> 脚本自动检测平台、安装依赖、下载项目。浏览器打开 `http://localhost:8000` 即可使用。
+
+### CLI
+
 ```bash
 python analyze.py 000001
 ```
-
-## 数据仓库（付费 149 元）
-
-预构建全量 A 股数据库，本地运行，0 延迟。包含 22 字段、四维度衍生指标、PE/PB 历史分位、行业均值。License 绑定机器，不可复制。
-
-> 获取方式: <你的网站>
 
 ## 数据源
 
