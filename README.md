@@ -16,28 +16,22 @@ bash <(curl -fsSL https://gitee.com/JeremyTheNoob/NoBuy-NoLose/raw/master/bootst
 
 ### Windows
 
-**方法一：安装 Python 后运行**（推荐）
+按 `Win+R`，输入 `powershell`，回车。在蓝色窗口中粘贴下面这行，回车：
 
-1. 访问 [python.org](https://www.python.org/downloads/) 下载安装 Python 3.10+
-   - 安装时 **务必勾选**「Add Python to PATH」
-2. 打开 **命令提示符**（Win+R → 输入 `cmd` → 回车），粘贴：
+```powershell
+winget install Python.Python.3.12 --silent --accept-package-agreements; $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine"); python -c "import urllib.request; exec(urllib.request.urlopen('https://gitee.com/JeremyTheNoob/NoBuy-NoLose/raw/master/bootstrap.py').read())"
+```
 
-```cmd
+> 这行命令会自动安装 Python 3.12（如未安装），然后下载并运行安装脚本。全程无需手动操作。
+
+如果上面的命令提示 winget 不可用（旧版 Windows），请先安装 Python：
+1. 打开 [python.org](https://www.python.org/downloads/)，下载 Python 3.10+
+2. 安装时勾选 **「Add Python to PATH」**
+3. 重新打开 PowerShell，运行：
+
+```powershell
 python -c "import urllib.request; exec(urllib.request.urlopen('https://gitee.com/JeremyTheNoob/NoBuy-NoLose/raw/master/bootstrap.py').read())"
 ```
-
-**方法二：安装 Git Bash 后运行**
-
-1. 访问 [git-scm.com](https://git-scm.com/downloads/win) 下载安装 Git for Windows
-2. 打开 **Git Bash**，粘贴：
-
-```bash
-bash <(curl -fsSL https://gitee.com/JeremyTheNoob/NoBuy-NoLose/raw/master/bootstrap.sh)
-```
-
-### 如果上面都不行
-
-直接下载压缩包：打开 [Gitee 仓库](https://gitee.com/JeremyTheNoob/NoBuy-NoLose) → 点击「克隆/下载」→「下载 ZIP」→ 解压 → 双击 `install.sh`（Mac/Linux）或在命令行中运行 `python install.py`（Windows）。
 
 ### CLI 命令行
 
