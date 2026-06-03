@@ -58,7 +58,8 @@ def all_services_status() -> dict:
             },
             "database": {
                 "name": "数据源", "available": cloud_ok,
-                "detail": config.data.tushare.token and "Tushare" or (api_url and "云端数据仓库" or "未配置"),
+                "detail": config.data.tushare.token and "Tushare" or (api_url and "云端数据仓库" or "免费数据源"),
+                "hint": None if (api_url and cloud_ok) else True,
             },
         },
         "all_running": cloud_ok,

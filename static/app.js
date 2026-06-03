@@ -346,10 +346,16 @@ function renderServiceDash(data) {
         var running = s.running || s.available;
         var iconClass = running ? "on" : "warn";
 
+        var hintHtml = "";
+        if (s.hint) {
+            hintHtml = '<div class="sd-hint"><a href="https://smbnp.cloud/stock/buy" target="_blank">升级 Pro 数据源</a></div>';
+        }
+
         html += '<div class="sd-card">' +
             '<span class="sd-icon ' + iconClass + '"></span>' +
             '<div class="sd-name">' + s.name + '</div>' +
             '<div class="sd-detail">' + (s.detail || "") + '</div>' +
+            hintHtml +
             '</div>';
     }
     grid.innerHTML = html;
